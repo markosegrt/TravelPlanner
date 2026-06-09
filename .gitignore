@@ -1,0 +1,25 @@
+# ===== .NET / Service Fabric =====
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.cache
+packages/
+*.nupkg
+TestResults/
+
+# ===== Node / React =====
+node_modules/
+dist/
+.env
+.env.local
+.env.*.local
+
+# ===== OS =====
+Thumbs.db
+.DS_Store
+
+# ===== IDE =====
+.idea/
+*.swp
