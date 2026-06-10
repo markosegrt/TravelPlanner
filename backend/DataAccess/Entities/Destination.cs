@@ -15,6 +15,6 @@ namespace DataAccess.Entities
         public int TripId { get; set; }
         
         public Trip Trip { get; set; } = null!;
-        public ICollection<Activity> Activities { get; set; } = new List<Activity>();
+        public ICollection<Activity> Activities { get; set; } = [];
     }
 }

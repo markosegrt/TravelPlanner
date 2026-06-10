@@ -16,10 +16,10 @@ namespace DataAccess.Entities
 
         // Navigation
         public User Owner { get; set; } = null!;
-        public ICollection<Destination> Destinations { get; set; } = new List<Destination>();
-        public ICollection<Activity> Activities { get; set; } = new List<Activity>();
-        public ICollection<Expense> Expenses { get; set; } = new List<Expense>();
-        public ICollection<ChecklistItem> ChecklistItems { get; set; } = new List<ChecklistItem>();
-        public ICollection<ShareToken> ShareTokens { get; set; } = new List<ShareToken>();
+        public ICollection<Destination> Destinations { get; set; } = [];
+        public ICollection<Activity> Activities { get; set; } = [];
+        public ICollection<Expense> Expenses { get; set; } = [];
+        public ICollection<ChecklistItem> ChecklistItems { get; set; } = [];
+        public ICollection<ShareToken> ShareTokens { get; set; } = [];
     }
 }

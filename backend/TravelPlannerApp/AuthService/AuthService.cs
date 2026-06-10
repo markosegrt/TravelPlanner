@@ -1,51 +1,108 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Fabric;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.ServiceFabric.Services.Communication.Runtime;
+using Microsoft.ServiceFabric.Services.Remoting.Runtime;
 using Microsoft.ServiceFabric.Services.Runtime;
+using Common.DTOs;
+using Common.Enums;
+using Common.Interfaces;
+using DataAccess.Entities;
+using DataAccess.Mappers;
+using AuthService.Helpers;
+using AuthService.Repositories;
 
 namespace AuthService
 {
-    /// <summary>
-    /// An instance of this class is created for each service instance by the Service Fabric runtime.
-    /// </summary>
-    internal sealed class AuthService : StatelessService
+    internal sealed class AuthService : StatelessService, IAuthService
     {
+        private readonly UserRepository _userRepo = new();
+
         public AuthService(StatelessServiceContext context)
             : base(context)
         { }
 
-        /// <summary>
-        /// Optional override to create listeners (e.g., TCP, HTTP) for this service replica to handle client or user requests.
-        /// </summary>
-        /// <returns>A collection of listeners.</returns>
+        // Remoting listener
         protected override IEnumerable<ServiceInstanceListener> CreateServiceInstanceListeners()
         {
-            return new ServiceInstanceListener[0];
+            return this.CreateServiceRemotingInstanceListeners();
         }
 
-        /// <summary>
-        /// This is the main entry point for your service instance.
-        /// </summary>
-        /// <param name="cancellationToken">Canceled when Service Fabric needs to shut down this service instance.</param>
-        protected override async Task RunAsync(CancellationToken cancellationToken)
+        // ====== REGISTRACIJA ======
+        public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto)
         {
-            // TODO: Replace the following sample code with your own logic 
-            //       or remove this RunAsync override if it's not needed in your service.
+            if (await _userRepo.ExistsByEmailAsync(dto.Email))
+                throw new InvalidOperationException("User with this email already exists.");
 
-            long iterations = 0;
-
-            while (true)
+            var user = new User
             {
-                cancellationToken.ThrowIfCancellationRequested();
+                Name = dto.Name,
+                Email = dto.Email,
+                Role = UserRole.User,
+                CreatedAt = DateTime.UtcNow,
+                IsActive = true
+            };
 
-                ServiceEventSource.Current.ServiceMessage(this.Context, "Working-{0}", ++iterations);
+            user.PasswordHash = PasswordHelper.Hash(user, dto.Password);
+            await _userRepo.AddAsync(user);
 
-                await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
-            }
+            return new AuthResponseDto
+            {
+                Token = JwtHelper.GenerateToken(user),
+                User = EntityMappers.ToUserDto(user)
+            };
+        }
+
+        // ====== LOGIN ======
+        public async Task<AuthResponseDto> LoginAsync(LoginDto dto)
+        {
+            var user = await _userRepo.FindByEmailAsync(dto.Email);
+
+            if (user == null || !user.IsActive)
+                throw new InvalidOperationException("Invalid email or password.");
+
+            if (!PasswordHelper.Verify(user, user.PasswordHash, dto.Password))
+                throw new InvalidOperationException("Invalid email or password.");
+
+            return new AuthResponseDto
+            {
+                Token = JwtHelper.GenerateToken(user),
+                User = EntityMappers.ToUserDto(user)
+            };
+        }
+
+        // ====== GET USER BY ID ======
+        public async Task<UserDto?> GetUserByIdAsync(int userId)
+        {
+            var user = await _userRepo.FindByIdAsync(userId);
+            return user == null ? null : EntityMappers.ToUserDto(user);
+        }
+
+        // ====== GET ALL USERS (Admin) ======
+        public async Task<List<UserDto>> GetAllUsersAsync()
+        {
+            var users = await _userRepo.GetAllAsync();
+            return users.Select(EntityMappers.ToUserDto).ToList();
+        }
+
+        // ====== UPDATE USER STATUS (Admin — activate/deactivate) ======
+        public async Task<bool> UpdateUserStatusAsync(int userId, bool isActive)
+        {
+            return await _userRepo.UpdateStatusAsync(userId, isActive);
+        }
+
+        // ====== TOKEN VALIDACIJA ======
+        public Task<bool> ValidateTokenAsync(string token)
+        {
+            return Task.FromResult(JwtHelper.ValidateToken(token));
+        }
+
+        // ====== EXTRACT USER ID FROM JWT ======
+        public Task<int?> GetUserIdFromTokenAsync(string jwtToken)
+        {
+            return Task.FromResult(JwtHelper.GetUserIdFromToken(jwtToken));
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using DataAccess.Enums;
+﻿using Common.Enums;
 
 namespace DataAccess.Entities
 {
@@ -13,6 +13,6 @@ namespace DataAccess.Entities
         public bool IsActive { get; set; } = true;
         public string? LdapDistinguishedName { get; set; }
 
-        public ICollection<Trip> Trips { get; set; } = new List<Trip>();
+        public ICollection<Trip> Trips { get; set; } = [];
     }
 }
