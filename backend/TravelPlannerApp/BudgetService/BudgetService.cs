@@ -5,47 +5,88 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.ServiceFabric.Services.Communication.Runtime;
+using Microsoft.ServiceFabric.Services.Remoting.Runtime;
 using Microsoft.ServiceFabric.Services.Runtime;
+using Common.DTOs;
+using Common.Interfaces;
+using DataAccess.Entities;
+using DataAccess.Mappers;
+using BudgetService.Repositories;
 
 namespace BudgetService
 {
-    /// <summary>
-    /// An instance of this class is created for each service instance by the Service Fabric runtime.
-    /// </summary>
-    internal sealed class BudgetService : StatelessService
+    internal sealed class BudgetService : StatelessService, IBudgetService
     {
+        private readonly ExpenseRepository _expenseRepo = new();
+
         public BudgetService(StatelessServiceContext context)
             : base(context)
         { }
 
-        /// <summary>
-        /// Optional override to create listeners (e.g., TCP, HTTP) for this service replica to handle client or user requests.
-        /// </summary>
-        /// <returns>A collection of listeners.</returns>
+        // Remoting listener
         protected override IEnumerable<ServiceInstanceListener> CreateServiceInstanceListeners()
         {
-            return new ServiceInstanceListener[0];
+            return this.CreateServiceRemotingInstanceListeners();
         }
 
-        /// <summary>
-        /// This is the main entry point for your service instance.
-        /// </summary>
-        /// <param name="cancellationToken">Canceled when Service Fabric needs to shut down this service instance.</param>
-        protected override async Task RunAsync(CancellationToken cancellationToken)
+        // ====== GET EXPENSES ======
+        public async Task<List<ExpenseDto>> GetExpensesAsync(int tripId)
         {
-            // TODO: Replace the following sample code with your own logic 
-            //       or remove this RunAsync override if it's not needed in your service.
+            var expenses = await _expenseRepo.GetByTripAsync(tripId);
+            return expenses.Select(EntityMappers.ToExpenseDto).ToList();
+        }
 
-            long iterations = 0;
+        // ====== CREATE EXPENSE ======
+        public async Task<ExpenseDto> CreateExpenseAsync(int tripId, CreateExpenseDto dto)
+        {
+            if (dto.Amount < 0)
+                throw new InvalidOperationException("Amount cannot be negative.");
 
-            while (true)
+            var expense = new Expense
             {
-                cancellationToken.ThrowIfCancellationRequested();
+                Name = dto.Name,
+                Category = dto.Category,
+                Amount = dto.Amount,
+                Date = dto.Date,
+                Description = dto.Description,
+                TripId = tripId
+            };
 
-                ServiceEventSource.Current.ServiceMessage(this.Context, "Working-{0}", ++iterations);
+            await _expenseRepo.AddAsync(expense);
+            return EntityMappers.ToExpenseDto(expense);
+        }
 
-                await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
-            }
+        // ====== UPDATE EXPENSE ======
+        public async Task<ExpenseDto?> UpdateExpenseAsync(int tripId, int expenseId, UpdateExpenseDto dto)
+        {
+            if (dto.Amount < 0)
+                throw new InvalidOperationException("Amount cannot be negative.");
+
+            var expense = await _expenseRepo.UpdateAsync(tripId, expenseId, e =>
+            {
+                e.Name = dto.Name;
+                e.Category = dto.Category;
+                e.Amount = dto.Amount;
+                e.Date = dto.Date;
+                e.Description = dto.Description;
+            });
+
+            return expense == null ? null : EntityMappers.ToExpenseDto(expense);
+        }
+
+        // ====== DELETE EXPENSE ======
+        public async Task<bool> DeleteExpenseAsync(int tripId, int expenseId)
+        {
+            return await _expenseRepo.DeleteAsync(tripId, expenseId);
+        }
+
+        // ====== BUDGET SUMMARY ======
+        public async Task<BudgetSummaryDto> GetBudgetSummaryAsync(int tripId)
+        {
+            var planned = await _expenseRepo.GetPlannedBudgetAsync(tripId);
+            var spent = await _expenseRepo.GetTotalSpentAsync(tripId);
+
+            return EntityMappers.ToBudgetSummaryDto(planned, spent);
         }
     }
 }
