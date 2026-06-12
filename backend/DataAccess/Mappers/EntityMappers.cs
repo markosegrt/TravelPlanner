@@ -1,5 +1,6 @@
 ﻿using Common.DTOs;
 using DataAccess.Entities;
+using Common.Enums;
 
 namespace DataAccess.Mappers
 {
@@ -126,6 +127,18 @@ namespace DataAccess.Mappers
                 PlannedBudget = plannedBudget,
                 TotalSpent = totalSpent,
                 Remaining = plannedBudget - totalSpent
+            };
+        }
+
+        public static ShareTokenDto ToShareTokenDto(ShareToken s)
+        {
+            return new ShareTokenDto
+            {
+                Id = s.Id,
+                Token = s.Token,
+                TripId = s.TripId,
+                AccessLevel = s.AccessLevel,
+                ExpiresAt = s.ExpiresAt
             };
         }
     }

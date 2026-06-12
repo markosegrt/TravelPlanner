@@ -19,8 +19,13 @@ namespace TripService.Repositories
         public async Task<Trip?> GetDetailAsync(int tripId, int userId)
         {
             using var db = DbContextFactory.Create();
-            return await db.Trips
-                .Where(t => t.Id == tripId && t.OwnerUserId == userId)
+
+            var query = db.Trips.Where(t => t.Id == tripId);
+
+            if (userId > 0)
+                query = query.Where(t => t.OwnerUserId == userId);
+
+            return await query
                 .Include(t => t.Destinations)
                 .Include(t => t.Activities)
                 .Include(t => t.Expenses)

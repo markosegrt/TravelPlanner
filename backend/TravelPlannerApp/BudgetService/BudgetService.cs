@@ -9,6 +9,7 @@ using Microsoft.ServiceFabric.Services.Remoting.Runtime;
 using Microsoft.ServiceFabric.Services.Runtime;
 using Common.DTOs;
 using Common.Interfaces;
+using Common.Events;
 using DataAccess.Entities;
 using DataAccess.Mappers;
 using BudgetService.Repositories;
@@ -53,6 +54,24 @@ namespace BudgetService
             };
 
             await _expenseRepo.AddAsync(expense);
+
+            await EventPublisher.TryPublishAsync(
+                "ExpenseAdded",
+                $"Expense added: {expense.Name} ({expense.Amount:C})",
+                "BudgetService",
+                tripId: tripId);
+
+            var planned = await _expenseRepo.GetPlannedBudgetAsync(tripId);
+            var spent = await _expenseRepo.GetTotalSpentAsync(tripId);
+            if (spent > planned)
+            {
+                await EventPublisher.TryPublishAsync(
+                    "BudgetExceeded",
+                    $"Budget exceeded for trip {tripId}: spent {spent:C} of {planned:C}",
+                    "BudgetService",
+                    tripId: tripId);
+            }
+
             return EntityMappers.ToExpenseDto(expense);
         }
 

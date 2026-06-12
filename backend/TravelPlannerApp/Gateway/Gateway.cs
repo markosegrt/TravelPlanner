@@ -2,33 +2,26 @@ using System;
 using System.Collections.Generic;
 using System.Fabric;
 using System.IO;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.ServiceFabric.Services.Communication.AspNetCore;
 using Microsoft.ServiceFabric.Services.Communication.Runtime;
 using Microsoft.ServiceFabric.Services.Runtime;
-using Microsoft.ServiceFabric.Data;
+using Common.Config;
 using DataAccess;
 
 namespace Gateway
 {
-    /// <summary>
-    /// The FabricRuntime creates an instance of this class for each service type instance.
-    /// </summary>
     internal sealed class Gateway : StatelessService
     {
         public Gateway(StatelessServiceContext context)
             : base(context)
         { }
 
-        /// <summary>
-        /// Optional override to create listeners (like tcp, http) for this service instance.
-        /// </summary>
-        /// <returns>The collection of listeners.</returns>
         protected override IEnumerable<ServiceInstanceListener> CreateServiceInstanceListeners()
         {
             return new ServiceInstanceListener[]
@@ -40,7 +33,6 @@ namespace Gateway
 
                         var builder = WebApplication.CreateBuilder();
 
-                        // Load appsettings.json from the correct SF path
                         builder.Configuration
                             .SetBasePath(Directory.GetCurrentDirectory())
                             .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
@@ -53,10 +45,48 @@ namespace Gateway
                             .UseServiceFabricIntegration(listener, ServiceFabricIntegrationOptions.None)
                             .UseUrls(url);
 
-                        // Register DbContext with connection string from appsettings.json
+                        // ====== DbContext ======
                         builder.Services.AddDbContext<AppDbContext>(options =>
                             options.UseSqlServer(builder.Configuration
                                 .GetConnectionString("DefaultConnection")));
+
+                        // ====== CORS ======
+                        builder.Services.AddCors(options =>
+                        {
+                            options.AddPolicy("AllowReactApp", policy =>
+                            {
+                                policy.WithOrigins(
+                                        "http://localhost:5173",   // Vite default
+                                        "http://localhost:3000")   // CRA fallback
+                                    .AllowAnyHeader()
+                                    .AllowAnyMethod()
+                                    .AllowCredentials();
+                            });
+                        });
+
+                        // ====== JWT Authentication ======
+                        builder.Services.AddAuthentication(options =>
+                        {
+                            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                        })
+                        .AddJwtBearer(options =>
+                        {
+                            options.TokenValidationParameters = new TokenValidationParameters
+                            {
+                                ValidateIssuerSigningKey = true,
+                                IssuerSigningKey = new SymmetricSecurityKey(
+                                    Encoding.UTF8.GetBytes(JwtSettings.SecretKey)),
+                                ValidateIssuer = true,
+                                ValidIssuer = JwtSettings.Issuer,
+                                ValidateAudience = true,
+                                ValidAudience = JwtSettings.Audience,
+                                ValidateLifetime = true,
+                                ClockSkew = TimeSpan.Zero
+                            };
+                        });
+
+                        builder.Services.AddAuthorization();
 
                         builder.Services.AddControllers();
                         builder.Services.AddEndpointsApiExplorer();
@@ -70,7 +100,10 @@ namespace Gateway
                             app.UseSwaggerUI();
                         }
 
+                        app.UseCors("AllowReactApp");
+                        app.UseAuthentication();
                         app.UseAuthorization();
+
                         app.MapControllers();
 
                         return app;

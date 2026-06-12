@@ -9,6 +9,7 @@ using Microsoft.ServiceFabric.Services.Runtime;
 using Common.DTOs;
 using Common.Enums;
 using Common.Interfaces;
+using Common.Events;
 using DataAccess.Entities;
 using DataAccess.Mappers;
 using AuthService.Helpers;
@@ -19,6 +20,7 @@ namespace AuthService
     internal sealed class AuthService : StatelessService, IAuthService
     {
         private readonly UserRepository _userRepo = new();
+        private readonly ShareTokenRepository _shareRepo = new();
 
         public AuthService(StatelessServiceContext context)
             : base(context)
@@ -48,6 +50,12 @@ namespace AuthService
             user.PasswordHash = PasswordHelper.Hash(user, dto.Password);
             await _userRepo.AddAsync(user);
 
+            await EventPublisher.TryPublishAsync(
+                "UserRegistered",
+                $"New user registered: {user.Email}",
+                "AuthService",
+                userId: user.Id);
+
             return new AuthResponseDto
             {
                 Token = JwtHelper.GenerateToken(user),
@@ -65,6 +73,12 @@ namespace AuthService
 
             if (!PasswordHelper.Verify(user, user.PasswordHash, dto.Password))
                 throw new InvalidOperationException("Invalid email or password.");
+
+            await EventPublisher.TryPublishAsync(
+                "UserLoggedIn",
+                $"User logged in: {user.Email}",
+                "AuthService",
+                userId: user.Id);
 
             return new AuthResponseDto
             {
@@ -103,6 +117,34 @@ namespace AuthService
         public Task<int?> GetUserIdFromTokenAsync(string jwtToken)
         {
             return Task.FromResult(JwtHelper.GetUserIdFromToken(jwtToken));
+        }
+
+        // ====== CREATE SHARE TOKEN ======
+        public async Task<ShareTokenDto> CreateShareTokenAsync(int tripId, AccessLevel accessLevel)
+        {
+            var shareToken = await _shareRepo.CreateAsync(tripId, accessLevel);
+
+            await EventPublisher.TryPublishAsync(
+                "PlanShared",
+                $"Trip {tripId} shared with {accessLevel} access",
+                "AuthService",
+                tripId: tripId);
+
+            return EntityMappers.ToShareTokenDto(shareToken);
+        }
+
+        // ====== VALIDATE SHARE TOKEN ======
+        public async Task<ShareTokenDto?> ValidateShareTokenAsync(string token)
+        {
+            var shareToken = await _shareRepo.FindByTokenAsync(token);
+
+            if (shareToken == null) return null;
+
+            // Proveri istek tokena ako je postavljen
+            if (shareToken.ExpiresAt.HasValue && shareToken.ExpiresAt.Value < DateTime.UtcNow)
+                return null;
+
+            return EntityMappers.ToShareTokenDto(shareToken);
         }
     }
 }

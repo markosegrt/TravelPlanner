@@ -9,6 +9,7 @@ using Microsoft.ServiceFabric.Services.Remoting.Runtime;
 using Microsoft.ServiceFabric.Services.Runtime;
 using Common.DTOs;
 using Common.Interfaces;
+using Common.Events;
 using DataAccess.Entities;
 using DataAccess.Mappers;
 using TripService.Repositories;
@@ -80,6 +81,14 @@ namespace TripService
             };
 
             await _tripRepo.AddAsync(trip);
+
+            await EventPublisher.TryPublishAsync(
+                "TripCreated",
+                $"Trip created: {trip.Name}",
+                "TripService",
+                userId: userId,
+                tripId: trip.Id);
+
             return EntityMappers.ToTripDto(trip);
         }
 
@@ -111,7 +120,19 @@ namespace TripService
 
         public async Task<bool> DeleteTripAsync(int tripId, int userId)
         {
-            return await _tripRepo.DeleteAsync(tripId, userId);
+            var deleted = await _tripRepo.DeleteAsync(tripId, userId);
+
+            if (deleted)
+            {
+                await EventPublisher.TryPublishAsync(
+                    "TripDeleted",
+                    $"Trip {tripId} deleted",
+                    "TripService",
+                    userId: userId,
+                    tripId: tripId);
+            }
+
+            return deleted;
         }
 
         // ==================== DESTINATIONS ====================
