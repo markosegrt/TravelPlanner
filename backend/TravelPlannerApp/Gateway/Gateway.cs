@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using Microsoft.ServiceFabric.Services.Communication.AspNetCore;
 using Microsoft.ServiceFabric.Services.Communication.Runtime;
 using Microsoft.ServiceFabric.Services.Runtime;
@@ -35,7 +36,7 @@ namespace Gateway
 
                         builder.Configuration
                             .SetBasePath(Directory.GetCurrentDirectory())
-                            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+                            .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
 
                         builder.Services.AddSingleton<StatelessServiceContext>(serviceContext);
 
@@ -47,8 +48,7 @@ namespace Gateway
 
                         // ====== DbContext ======
                         builder.Services.AddDbContext<AppDbContext>(options =>
-                            options.UseSqlServer(builder.Configuration
-                                .GetConnectionString("DefaultConnection")));
+                             options.UseSqlServer(DataAccess.DatabaseConfig.ConnectionString));
 
                         // ====== CORS ======
                         builder.Services.AddCors(options =>
@@ -56,8 +56,8 @@ namespace Gateway
                             options.AddPolicy("AllowReactApp", policy =>
                             {
                                 policy.WithOrigins(
-                                        "http://localhost:5173",   // Vite default
-                                        "http://localhost:3000")   // CRA fallback
+                                        "http://localhost:5173",
+                                        "http://localhost:3000")
                                     .AllowAnyHeader()
                                     .AllowAnyMethod()
                                     .AllowCredentials();
@@ -90,15 +90,36 @@ namespace Gateway
 
                         builder.Services.AddControllers();
                         builder.Services.AddEndpointsApiExplorer();
-                        builder.Services.AddSwaggerGen();
+
+                        // ====== Swagger sa JWT podrškom ======
+                        builder.Services.AddSwaggerGen(c =>
+                        {
+                            var jwtScheme = new OpenApiSecurityScheme
+                            {
+                                Name = "Authorization",
+                                Type = SecuritySchemeType.Http,
+                                Scheme = "bearer",
+                                BearerFormat = "JWT",
+                                In = ParameterLocation.Header,
+                                Description = "Enter your JWT token (without 'Bearer' prefix).",
+                                Reference = new OpenApiReference
+                                {
+                                    Type = ReferenceType.SecurityScheme,
+                                    Id = "Bearer"
+                                }
+                            };
+
+                            c.AddSecurityDefinition("Bearer", jwtScheme);
+                            c.AddSecurityRequirement(new OpenApiSecurityRequirement
+                            {
+                                { jwtScheme, Array.Empty<string>() }
+                            });
+                        });
 
                         var app = builder.Build();
 
-                        if (app.Environment.IsDevelopment())
-                        {
-                            app.UseSwagger();
-                            app.UseSwaggerUI();
-                        }
+                        app.UseSwagger();
+                        app.UseSwaggerUI();
 
                         app.UseCors("AllowReactApp");
                         app.UseAuthentication();

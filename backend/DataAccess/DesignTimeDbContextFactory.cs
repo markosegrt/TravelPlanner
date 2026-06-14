@@ -8,10 +8,7 @@ namespace DataAccess
         public AppDbContext CreateDbContext(string[] args)
         {
             var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
-
-            optionsBuilder.UseSqlServer(
-                "Server=localhost\\SQLEXPRESS;Database=TravelPlannerDB;Trusted_Connection=True;TrustServerCertificate=True");
-
+            optionsBuilder.UseSqlServer(DatabaseConfig.ConnectionString);
             return new AppDbContext(optionsBuilder.Options);
         }
     }
