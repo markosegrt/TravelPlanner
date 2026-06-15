@@ -30,4 +30,20 @@ export const tripService = {
   remove: async (id: number): Promise<void> => {
     await api.delete(`/api/trips/${id}`);
   },
+
+  downloadPdf: async (id: number, tripName: string): Promise<void> => {
+    const response = await api.get(`/api/trips/${id}/report.pdf`, {
+      responseType: 'blob',   // binarni fajl, ne JSON
+    });
+
+    // Kreiraj download link iz blob-a
+    const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${tripName}-plan.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  },
 };

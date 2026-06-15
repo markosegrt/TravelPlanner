@@ -6,6 +6,12 @@ import { Navbar } from '../components/Navbar';
 import { SectionTabs, type TripSection } from '../components/SectionTabs';
 import { BudgetSummaryWidget } from '../components/BudgetSummaryWidget';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { DestinationsSection } from '../components/sections/DestinationsSection';
+import { ActivitiesSection } from '../components/sections/ActivitiesSection';
+import { BudgetSection } from '../components/sections/BudgetSection';
+import { ChecklistSection } from '../components/sections/ChecklistSection';
+import { NotesSection } from '../components/sections/NotesSection';
+import { ShareSection } from '../components/sections/ShareSection';
 
 export function TripDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -125,12 +131,47 @@ export function TripDetailPage() {
         )}
 
         
-        {section === 'destinations' && <div className="card">Destinations section — coming next</div>}
-        {section === 'activities' && <div className="card">Activities section — coming next</div>}
-        {section === 'budget' && <div className="card">Budget section — coming next</div>}
-        {section === 'checklist' && <div className="card">Checklist section — coming next</div>}
-        {section === 'notes' && <div className="card">Notes section — coming next</div>}
-        {section === 'share' && <div className="card">Share section — coming next</div>}
+        {section === 'destinations' && (
+          <DestinationsSection
+            tripId={trip.id}
+            tripStart={trip.startDate}
+            tripEnd={trip.endDate}
+            destinations={trip.destinations}
+            onChanged={loadTrip}
+          />
+        )}
+        {section === 'activities' && (
+          <ActivitiesSection
+            tripId={trip.id}
+            tripStart={trip.startDate}
+            tripEnd={trip.endDate}
+            activities={trip.activities}
+            onChanged={loadTrip}
+          />
+        )}
+        {section === 'budget' && (
+          <BudgetSection
+            tripId={trip.id}
+            tripStart={trip.startDate}
+            tripEnd={trip.endDate}
+            expenses={trip.expenses}
+            summary={trip.budgetSummary}
+            onChanged={loadTrip}
+          />
+        )}
+        {section === 'checklist' && (
+          <ChecklistSection
+            tripId={trip.id}
+            items={trip.checklistItems}
+            onChanged={loadTrip}
+          />
+        )}
+        {section === 'notes' && (
+          <NotesSection trip={trip} onChanged={loadTrip} />
+        )}
+        {section === 'share' && (
+          <ShareSection tripId={trip.id} tripName={trip.name} />
+        )}
       </div>
 
       <ConfirmDialog
