@@ -43,5 +43,21 @@ namespace Gateway.Controllers
                 return BadRequest(new { error = ex.Message });
             }
         }
+
+        // GET /api/admin/trips
+        [HttpGet("trips")]
+        public async Task<IActionResult> GetAllTrips()
+        {
+            try
+            {
+                var tripService = ServiceProxyHelper.GetTripService();
+                var trips = await tripService.GetAllTripsForAdminAsync();
+                return Ok(trips);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+        }
     }
 }

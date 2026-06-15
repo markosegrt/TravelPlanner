@@ -29,5 +29,8 @@ namespace Common.Interfaces
         Task<ChecklistItemDto> CreateChecklistItemAsync(int tripId, CreateChecklistItemDto dto);
         Task<ChecklistItemDto?> UpdateChecklistItemAsync(int tripId, int itemId, UpdateChecklistItemDto dto);
         Task<bool> DeleteChecklistItemAsync(int tripId, int itemId);
+
+        //admin
+        Task<List<AdminTripDto>> GetAllTripsForAdminAsync();
     }
 }

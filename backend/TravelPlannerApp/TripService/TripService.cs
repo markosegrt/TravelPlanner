@@ -317,5 +317,24 @@ namespace TripService
             if (trip == null) return null;
             return (trip.StartDate, trip.EndDate);
         }
+
+        // ====== ADMIN: sva putovanja svih korisnika ======
+        public async Task<List<AdminTripDto>> GetAllTripsForAdminAsync()
+        {
+            var trips = await _tripRepo.GetAllWithOwnerAsync();
+            return trips.Select(t => new AdminTripDto
+            {
+                Id = t.Id,
+                Name = t.Name,
+                StartDate = t.StartDate,
+                EndDate = t.EndDate,
+                PlannedBudget = t.PlannedBudget,
+                TotalSpent = t.Expenses.Sum(e => e.Amount),
+                DestinationCount = t.Destinations.Count,
+                OwnerUserId = t.OwnerUserId,
+                OwnerName = t.Owner?.Name ?? "Unknown",
+                OwnerEmail = t.Owner?.Email ?? ""
+            }).ToList();
+        }
     }
 }

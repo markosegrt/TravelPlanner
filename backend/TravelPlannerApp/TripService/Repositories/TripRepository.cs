@@ -75,5 +75,16 @@ namespace TripService.Repositories
             using var db = DbContextFactory.Create();
             return await db.Trips.FindAsync(tripId);
         }
+
+        public async Task<List<Trip>> GetAllWithOwnerAsync()
+        {
+            using var db = DbContextFactory.Create();
+            return await db.Trips
+                .Include(t => t.Owner)
+                .Include(t => t.Destinations)
+                .Include(t => t.Expenses)
+                .OrderByDescending(t => t.CreatedAt)
+                .ToListAsync();
+        }
     }
 }

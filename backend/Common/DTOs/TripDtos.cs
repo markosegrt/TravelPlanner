@@ -49,4 +49,18 @@
         public decimal PlannedBudget { get; set; }
         public string? GeneralNotes { get; set; }
     }
+
+    public class AdminTripDto
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public DateTime StartDate { get; set; }
+        public DateTime EndDate { get; set; }
+        public decimal PlannedBudget { get; set; }
+        public decimal TotalSpent { get; set; }
+        public int DestinationCount { get; set; }
+        public int OwnerUserId { get; set; }
+        public string OwnerName { get; set; } = string.Empty;
+        public string OwnerEmail { get; set; } = string.Empty;
+    }
 }
