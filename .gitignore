@@ -9,6 +9,16 @@ packages/
 *.nupkg
 TestResults/
 
+# Service Fabric package output (DLL-ovi koje SF kopira van bin/)
+**/PackageRoot/Code/
+pkg/
+*.dll
+*.exe
+*.pdb
+*.deps.json
+*.runtimeconfig.json
+createdump.exe
+
 # ===== Node / React =====
 node_modules/
 dist/
