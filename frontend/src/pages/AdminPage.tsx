@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import type { User } from '../models/User';
 import type { AdminTrip } from '../models/AdminTrip';
 import { Navbar } from '../components/Navbar';
+import { AdminUserModal } from '../components/AdminUserModal';
 
 type AdminTab = 'users' | 'trips';
 
@@ -17,6 +18,7 @@ export function AdminPage() {
   const [trips, setTrips] = useState<AdminTrip[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [manageUser, setManageUser] = useState<User | null>(null);
 
   useEffect(() => {
     loadData();
@@ -113,12 +115,17 @@ export function AdminPage() {
                       {u.id === currentUser?.id ? (
                         <span className="text-muted" style={{ fontSize: 'var(--font-size-sm)' }}>You</span>
                       ) : (
-                        <button
-                          className={`btn btn-sm ${u.isActive ? 'btn-outline' : 'btn-primary'}`}
-                          onClick={() => handleToggleStatus(u)}
-                        >
-                          {u.isActive ? 'Deactivate' : 'Activate'}
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            className={`btn btn-sm ${u.isActive ? 'btn-outline' : 'btn-primary'}`}
+                            onClick={() => handleToggleStatus(u)}
+                          >
+                            {u.isActive ? 'Deactivate' : 'Activate'}
+                          </button>
+                          <button className="btn btn-ghost btn-sm" onClick={() => setManageUser(u)}>
+                            Manage
+                          </button>
+                        </div>
                       )}
                     </td>
                   </tr>
@@ -168,6 +175,14 @@ export function AdminPage() {
           )
         )}
       </div>
+
+      <AdminUserModal
+        key={manageUser?.id ?? 'none'}
+        user={manageUser}
+        isOpen={!!manageUser}
+        onClose={() => setManageUser(null)}
+        onSaved={loadData}
+      />
     </>
   );
 }

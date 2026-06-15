@@ -16,4 +16,12 @@ export const adminService = {
     const response = await api.get<AdminTrip[]>('/api/admin/trips');
     return response.data;
   },
+
+  updateUserRole: async (id: number, role: string): Promise<void> => {
+    await api.put(`/api/admin/users/${id}/role`, { role });
+  },
+
+  resetUserPassword: async (id: number, newPassword: string): Promise<void> => {
+    await api.put(`/api/admin/users/${id}/password`, { newPassword });
+  },
 };

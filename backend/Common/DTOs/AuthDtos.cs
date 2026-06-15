@@ -32,4 +32,14 @@
     {
         public bool IsActive { get; set; }
     }
+
+    public class UpdateUserRoleDto
+    {
+        public string Role { get; set; } = string.Empty;  
+    }
+
+    public class ResetPasswordDto
+    {
+        public string NewPassword { get; set; } = string.Empty;
+    }
 }

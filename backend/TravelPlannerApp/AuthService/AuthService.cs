@@ -150,5 +150,27 @@ namespace AuthService
 
             return EntityMappers.ToShareTokenDto(shareToken);
         }
+
+        // ====== UPDATE USER ROLE (Admin) ======
+        public async Task<bool> UpdateUserRoleAsync(int userId, string role)
+        {
+            if (!Enum.TryParse<UserRole>(role, out var parsedRole))
+                throw new InvalidOperationException("Invalid role. Must be 'User' or 'Admin'.");
+
+            return await _userRepo.UpdateRoleAsync(userId, parsedRole);
+        }
+
+        // ====== RESET USER PASSWORD (Admin) ======
+        public async Task<bool> ResetUserPasswordAsync(int userId, string newPassword)
+        {
+            if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < 6)
+                throw new InvalidOperationException("Password must be at least 6 characters.");
+
+            var user = await _userRepo.FindByIdAsync(userId);
+            if (user == null) return false;
+
+            var hash = PasswordHelper.Hash(user, newPassword);
+            return await _userRepo.UpdatePasswordHashAsync(userId, hash);
+        }
     }
 }

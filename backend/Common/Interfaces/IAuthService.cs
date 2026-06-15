@@ -15,5 +15,7 @@ namespace Common.Interfaces
         Task<int?> GetUserIdFromTokenAsync(string jwtToken);
         Task<ShareTokenDto> CreateShareTokenAsync(int tripId, AccessLevel accessLevel);
         Task<ShareTokenDto?> ValidateShareTokenAsync(string token);
+        Task<bool> UpdateUserRoleAsync(int userId, string role);
+        Task<bool> ResetUserPasswordAsync(int userId, string newPassword);
     }
 }

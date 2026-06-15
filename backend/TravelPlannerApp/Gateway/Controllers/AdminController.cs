@@ -59,5 +59,41 @@ namespace Gateway.Controllers
                 return BadRequest(new { error = ex.Message });
             }
         }
+
+        // PUT /api/admin/users/{id}/role
+        [HttpPut("users/{id}/role")]
+        public async Task<IActionResult> UpdateUserRole(int id, [FromBody] UpdateUserRoleDto dto)
+        {
+            try
+            {
+                var authService = ServiceProxyHelper.GetAuthService();
+                var updated = await authService.UpdateUserRoleAsync(id, dto.Role);
+
+                if (!updated) return NotFound(new { error = "User not found." });
+                return Ok(new { message = "User role updated." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+        }
+
+        // PUT /api/admin/users/{id}/password
+        [HttpPut("users/{id}/password")]
+        public async Task<IActionResult> ResetUserPassword(int id, [FromBody] ResetPasswordDto dto)
+        {
+            try
+            {
+                var authService = ServiceProxyHelper.GetAuthService();
+                var updated = await authService.ResetUserPasswordAsync(id, dto.NewPassword);
+
+                if (!updated) return NotFound(new { error = "User not found." });
+                return Ok(new { message = "Password reset successfully." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+        }
     }
 }

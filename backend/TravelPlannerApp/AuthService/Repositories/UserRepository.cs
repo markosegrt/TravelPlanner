@@ -1,6 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Common.Enums;
 using DataAccess;
 using DataAccess.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace AuthService.Repositories
 {
@@ -44,6 +45,30 @@ namespace AuthService.Repositories
             if (user == null) return false;
 
             user.IsActive = isActive;
+            db.Users.Update(user);
+            await db.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> UpdateRoleAsync(int userId, UserRole role)
+        {
+            using var db = DbContextFactory.Create();
+            var user = await db.Users.FindAsync(userId);
+            if (user == null) return false;
+
+            user.Role = role;
+            db.Users.Update(user);
+            await db.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> UpdatePasswordHashAsync(int userId, string passwordHash)
+        {
+            using var db = DbContextFactory.Create();
+            var user = await db.Users.FindAsync(userId);
+            if (user == null) return false;
+
+            user.PasswordHash = passwordHash;
             db.Users.Update(user);
             await db.SaveChangesAsync();
             return true;
