@@ -63,5 +63,13 @@ namespace BudgetService.Repositories
             var trip = await db.Trips.FindAsync(tripId);
             return trip?.PlannedBudget ?? 0;
         }
+
+        public async Task<(DateTime start, DateTime end)?> GetTripBoundsAsync(int tripId)
+        {
+            using var db = DbContextFactory.Create();
+            var trip = await db.Trips.FindAsync(tripId);
+            if (trip == null) return null;
+            return (trip.StartDate, trip.EndDate);
+        }
     }
 }

@@ -43,6 +43,12 @@ namespace BudgetService
             if (dto.Amount < 0)
                 throw new InvalidOperationException("Amount cannot be negative.");
 
+            var bounds = await _expenseRepo.GetTripBoundsAsync(tripId);
+            if (bounds == null)
+                throw new InvalidOperationException("Trip not found.");
+            if (dto.Date.Date < bounds.Value.start.Date || dto.Date.Date > bounds.Value.end.Date)
+                throw new InvalidOperationException("Expense date must be within the trip period.");
+
             var expense = new Expense
             {
                 Name = dto.Name,
@@ -81,6 +87,12 @@ namespace BudgetService
             if (dto.Amount < 0)
                 throw new InvalidOperationException("Amount cannot be negative.");
 
+            var bounds = await _expenseRepo.GetTripBoundsAsync(tripId);
+            if (bounds == null)
+                throw new InvalidOperationException("Trip not found.");
+            if (dto.Date.Date < bounds.Value.start.Date || dto.Date.Date > bounds.Value.end.Date)
+                throw new InvalidOperationException("Expense date must be within the trip period.");
+
             var expense = await _expenseRepo.UpdateAsync(tripId, expenseId, e =>
             {
                 e.Name = dto.Name;
@@ -104,7 +116,6 @@ namespace BudgetService
         {
             var planned = await _expenseRepo.GetPlannedBudgetAsync(tripId);
             var spent = await _expenseRepo.GetTotalSpentAsync(tripId);
-
             return EntityMappers.ToBudgetSummaryDto(planned, spent);
         }
     }

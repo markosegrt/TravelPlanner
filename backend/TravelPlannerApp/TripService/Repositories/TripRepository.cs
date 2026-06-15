@@ -68,5 +68,12 @@ namespace TripService.Repositories
             await db.SaveChangesAsync();
             return true;
         }
+
+
+        public async Task<Trip?> GetByIdAsync(int tripId)
+        {
+            using var db = DbContextFactory.Create();
+            return await db.Trips.FindAsync(tripId);
+        }
     }
 }

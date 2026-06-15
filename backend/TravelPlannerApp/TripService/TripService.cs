@@ -63,6 +63,8 @@ namespace TripService
 
         public async Task<TripDto> CreateTripAsync(CreateTripDto dto, int userId)
         {
+            if (dto.StartDate.Date < DateTime.UtcNow.Date)
+                throw new InvalidOperationException("Start date cannot be in the past.");
             if (dto.EndDate < dto.StartDate)
                 throw new InvalidOperationException("End date cannot be before start date.");
             if (dto.PlannedBudget < 0)
@@ -94,6 +96,7 @@ namespace TripService
 
         public async Task<TripDto?> UpdateTripAsync(int tripId, UpdateTripDto dto, int userId)
         {
+
             if (dto.EndDate < dto.StartDate)
                 throw new InvalidOperationException("End date cannot be before start date.");
             if (dto.PlannedBudget < 0)
@@ -148,6 +151,12 @@ namespace TripService
             if (dto.DepartureDate < dto.ArrivalDate)
                 throw new InvalidOperationException("Departure date cannot be before arrival date.");
 
+            var bounds = await GetTripBoundsAsync(tripId);
+            if (bounds == null)
+                throw new InvalidOperationException("Trip not found.");
+            if (dto.ArrivalDate.Date < bounds.Value.start.Date || dto.DepartureDate.Date > bounds.Value.end.Date)
+                throw new InvalidOperationException("Destination dates must be within the trip period.");
+
             var destination = new Destination
             {
                 Name = dto.Name,
@@ -168,6 +177,12 @@ namespace TripService
         {
             if (dto.DepartureDate < dto.ArrivalDate)
                 throw new InvalidOperationException("Departure date cannot be before arrival date.");
+
+            var bounds = await GetTripBoundsAsync(tripId);
+            if (bounds == null)
+                throw new InvalidOperationException("Trip not found.");
+            if (dto.ArrivalDate.Date < bounds.Value.start.Date || dto.DepartureDate.Date > bounds.Value.end.Date)
+                throw new InvalidOperationException("Destination dates must be within the trip period.");
 
             var destination = await _destRepo.UpdateAsync(tripId, destinationId, d =>
             {
@@ -201,6 +216,12 @@ namespace TripService
             if (dto.EstimatedCost < 0)
                 throw new InvalidOperationException("Estimated cost cannot be negative.");
 
+            var bounds = await GetTripBoundsAsync(tripId);
+            if (bounds == null)
+                throw new InvalidOperationException("Trip not found.");
+            if (dto.Date.Date < bounds.Value.start.Date || dto.Date.Date > bounds.Value.end.Date)
+                throw new InvalidOperationException("Activity date must be within the trip period.");
+
             var activity = new Activity
             {
                 Name = dto.Name,
@@ -224,6 +245,12 @@ namespace TripService
         {
             if (dto.EstimatedCost < 0)
                 throw new InvalidOperationException("Estimated cost cannot be negative.");
+
+            var bounds = await GetTripBoundsAsync(tripId);
+            if (bounds == null)
+                throw new InvalidOperationException("Trip not found.");
+            if (dto.Date.Date < bounds.Value.start.Date || dto.Date.Date > bounds.Value.end.Date)
+                throw new InvalidOperationException("Activity date must be within the trip period.");
 
             var activity = await _actRepo.UpdateAsync(tripId, activityId, a =>
             {
@@ -282,6 +309,13 @@ namespace TripService
         public async Task<bool> DeleteChecklistItemAsync(int tripId, int itemId)
         {
             return await _checkRepo.DeleteAsync(tripId, itemId);
+        }
+
+        private async Task<(DateTime start, DateTime end)?> GetTripBoundsAsync(int tripId)
+        {
+            var trip = await _tripRepo.GetByIdAsync(tripId);
+            if (trip == null) return null;
+            return (trip.StartDate, trip.EndDate);
         }
     }
 }
