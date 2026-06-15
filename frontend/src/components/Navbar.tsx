@@ -36,9 +36,12 @@ export function Navbar() {
 
         <div className="flex" style={{ alignItems: 'center', gap: 'var(--space-4)' }}>
           {isAdmin && (
-            <Link to="/admin" className="text-muted" style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600 }}>
-              Admin
-            </Link>
+            <button
+              className="btn btn-outline btn-sm"
+              onClick={() => navigate('/admin')}
+            >
+              Admin Dashboard
+            </button>
           )}
           <span className="text-muted" style={{ fontSize: 'var(--font-size-sm)' }}>
             {user?.name}

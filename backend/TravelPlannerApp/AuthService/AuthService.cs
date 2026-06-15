@@ -68,11 +68,16 @@ namespace AuthService
         {
             var user = await _userRepo.FindByEmailAsync(dto.Email);
 
-            if (user == null || !user.IsActive)
+            if (user == null)
                 throw new InvalidOperationException("Invalid email or password.");
 
+            // Prvo proveri lozinku, pa tek onda status —
+            // da ne otkrivamo da nalog postoji ako je lozinka pogrešna.
             if (!PasswordHelper.Verify(user, user.PasswordHash, dto.Password))
                 throw new InvalidOperationException("Invalid email or password.");
+
+            if (!user.IsActive)
+                throw new InvalidOperationException("Your account has been deactivated. Please contact an administrator.");
 
             await EventPublisher.TryPublishAsync(
                 "UserLoggedIn",
@@ -140,7 +145,6 @@ namespace AuthService
 
             if (shareToken == null) return null;
 
-            // Proveri istek tokena ako je postavljen
             if (shareToken.ExpiresAt.HasValue && shareToken.ExpiresAt.Value < DateTime.UtcNow)
                 return null;
 
