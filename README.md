@@ -6,6 +6,22 @@ Built on the stack taught in the course: **React + Microsoft Service Fabric + AS
 
 ---
 
+## Table of Contents
+
+- [Architecture overview](#architecture-overview)
+- [Tech stack](#tech-stack)
+- [Prerequisites](#prerequisites)
+- [Clone the repository](#clone-the-repository)
+- [Setup & running](#setup--running)
+- [Useful URLs](#useful-urls)
+- [Creating an admin](#creating-an-admin)
+- [Project structure](#project-structure)
+- [Key features](#key-features)
+- [Documentation & diagrams](#documentation--diagrams)
+- [Troubleshooting](#troubleshooting)
+
+---
+
 ## Architecture overview
 
 The system is split into a **frontend** (React) and a **backend** (Service Fabric microservices). The frontend talks **only** to the Gateway over REST; everything internal is Service Fabric Remoting.
@@ -47,6 +63,8 @@ SQL Server (TravelPlannerDB)
 | Common | Class library | Remoting interfaces (`IService`), DTOs, event models, JWT settings. |
 | DataAccess | Class library | EF Core `DbContext`, entities, migrations. Shared single database. |
 
+A more detailed architecture description is in [ARCHITECTURE.md](ARCHITECTURE.md).
+
 ---
 
 ## Tech stack
@@ -79,6 +97,15 @@ Install before running:
 - **SQL Server Management Studio (SSMS)**
 - **.NET 8 SDK**
 - **Node.js** (v22 or current LTS) + npm
+
+---
+
+## Clone the repository
+
+```powershell
+git clone <REPOSITORY_URL>
+cd TravelPlanner
+```
 
 ---
 
@@ -128,6 +155,13 @@ The Gateway listens on **`http://localhost:8413`**. Swagger is available at `htt
 
 > If the Gateway port differs in Service Fabric Explorer, update `VITE_API_BASE_URL` in the frontend `.env` accordingly.
 
+To verify the backend builds without deploying:
+
+```powershell
+cd backend
+dotnet build TravelPlannerApp.sln
+```
+
 ### 4. Frontend
 
 ```bash
@@ -143,6 +177,32 @@ The frontend reads the backend URL from `frontend/.env`:
 ```
 VITE_API_BASE_URL=http://localhost:8413
 ```
+
+To verify the frontend builds:
+
+```powershell
+cd frontend
+npm run build
+```
+
+### Recommended startup order
+
+1. Start SQL Server.
+2. Make sure `TravelPlannerDB` exists and migrations are applied.
+3. Start the Service Fabric Local Cluster.
+4. Open the solution in Visual Studio (as Administrator), set `TravelPlannerApp` as startup, press F5.
+5. Confirm all 6 services are green in Service Fabric Explorer.
+6. In a terminal, start the frontend (`npm run dev`).
+7. Open `http://localhost:5173`.
+
+---
+
+## Useful URLs
+
+- Frontend: `http://localhost:5173`
+- Gateway API base: `http://localhost:8413`
+- Swagger: `http://localhost:8413/swagger`
+- Service Fabric Explorer: `http://localhost:19080/Explorer`
 
 ---
 
@@ -172,14 +232,15 @@ TravelPlanner/
 │   │   └── EventService/
 │   ├── Common/                  # Remoting interfaces, DTOs, events
 │   └── DataAccess/              # EF Core DbContext, entities, migrations
-└── frontend/                    # React + Vite + TypeScript
-    └── src/
-        ├── api/                 # Axios instance + JWT interceptor
-        ├── models/              # TypeScript types
-        ├── services/            # API calls (injected into components)
-        ├── context/             # AuthContext
-        ├── components/          # Reusable UI + section components
-        └── pages/               # Route-level views
+├── frontend/                    # React + Vite + TypeScript
+│   └── src/
+│       ├── api/                 # Axios instance + JWT interceptor
+│       ├── models/              # TypeScript types
+│       ├── services/            # API calls (injected into components)
+│       ├── context/             # AuthContext
+│       ├── components/          # Reusable UI + section components
+│       └── pages/               # Route-level views
+└── docs/                        # Architecture & use case diagrams
 ```
 
 ---
@@ -192,6 +253,45 @@ TravelPlanner/
 - Destinations, activities (grouped by day, status chips), expenses (auto-calculated budget summary), checklist, and notes — all validated to fall within the trip period
 - Cascade delete: removing a trip removes all related entities
 - Share a plan via QR code / link with **View** or **Edit** access levels (token validated on every request)
-- PDF export of a trip plan
+- PDF export of a trip plan (with a QR code linking to the shared view)
 - Admin panel: user management and a system-wide trip overview
 - Asynchronous event handling (audit + notifications) via a Service Fabric stateful ReliableQueue
+
+---
+
+## Documentation & diagrams
+
+- [ARCHITECTURE.md](ARCHITECTURE.md) — detailed system architecture
+- `docs/` — architecture diagram and use case diagram
+
+---
+
+## Troubleshooting
+
+**Swagger does not open**
+- Confirm `TravelPlannerApp` is the startup project.
+- Confirm the Service Fabric Local Cluster is **Started**.
+- Confirm all services show green in Service Fabric Explorer.
+- Confirm port `8413` is not already in use by another process.
+
+**`Login failed for user 'NT AUTHORITY\NETWORK SERVICE'`**
+- The Service Fabric process account has no access to the database. Run the SQL script from step 1 of Setup to create the login/user and grant `db_datareader` + `db_datawriter`.
+
+**`Invalid object name '...'` (a table is missing)**
+- Migrations were not applied. Run `Update-Database -StartupProject Gateway -Project DataAccess` in the Package Manager Console, then confirm the tables and `__EFMigrationsHistory` exist in SSMS.
+
+**Visual Studio cannot deploy to the local cluster**
+- Visual Studio must be **run as Administrator** to deploy to the Service Fabric local cluster.
+
+**Frontend cannot reach the backend**
+- Confirm the backend is running on `http://localhost:8413`.
+- Confirm `frontend/.env` has the correct `VITE_API_BASE_URL`.
+- Confirm the frontend dev server is running on `http://localhost:5173` (the Gateway CORS policy allows this origin).
+
+**Service Fabric NuGet packages are missing / build fails on `Microsoft.VisualStudio.Azure.Fabric.MSBuild`**
+- Run **Restore NuGet Packages** on the solution.
+- Confirm the Service Fabric SDK is installed.
+- Restart Visual Studio if needed.
+
+**A service shows a Warning (exit code) in Service Fabric Explorer after repeated F5 / Shift+F5 cycles**
+- This is usually a leftover from a debug restart, not a real error. Do a clean redeploy (stop debugging, then F5 once) and confirm the service returns to green.
