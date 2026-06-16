@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { shareService } from '../services/shareService';
 import type { SharedPlan } from '../models/Share';
 import { AccessLevel, ActivityStatusLabels, ExpenseCategoryLabels } from '../models/enums';
+import { SharedPlanEdit } from './SharedPlanEdit';
 
 export function SharedPlanPage() {
   const { token } = useParams<{ token: string }>();
@@ -87,7 +88,7 @@ export function SharedPlanPage() {
           {trip.description && <p style={{ marginTop: 'var(--space-2)' }}>{trip.description}</p>}
         </div>
 
-        {/* Budget */}
+        {/* Budget — uvek read-only (budžet se ne menja kroz share) */}
         <div className="card">
           <h4 style={{ marginBottom: 'var(--space-3)' }}>Budget</h4>
           <div className="flex gap-4">
@@ -97,8 +98,13 @@ export function SharedPlanPage() {
           </div>
         </div>
 
-        {/* Destinations */}
-        {trip.destinations.length > 0 && (
+        {/* EDIT MODE — destinations + activities + checklist + notes editable */}
+        {isEdit && token && (
+          <SharedPlanEdit token={token} plan={plan} onChanged={loadPlan} />
+        )}
+
+        {/* VIEW MODE — read-only destinations */}
+        {!isEdit && trip.destinations.length > 0 && (
           <div className="card">
             <h4 style={{ marginBottom: 'var(--space-3)' }}>Destinations</h4>
             <div style={{ display: 'grid', gap: 'var(--space-3)' }}>
@@ -113,8 +119,8 @@ export function SharedPlanPage() {
           </div>
         )}
 
-        {/* Activities */}
-        {trip.activities.length > 0 && (
+        {/* Activities (view only) */}
+        {!isEdit && trip.activities.length > 0 && (
           <div className="card">
             <h4 style={{ marginBottom: 'var(--space-3)' }}>Activities</h4>
             {sortedDays.map((day) => (
@@ -135,7 +141,7 @@ export function SharedPlanPage() {
           </div>
         )}
 
-        {/* Expenses */}
+        {/* Expenses — uvek read-only (troškovi se ne menjaju kroz share) */}
         {trip.expenses.length > 0 && (
           <div className="card">
             <h4 style={{ marginBottom: 'var(--space-3)' }}>Expenses</h4>
@@ -148,8 +154,8 @@ export function SharedPlanPage() {
           </div>
         )}
 
-        {/* Checklist */}
-        {trip.checklistItems.length > 0 && (
+        {/* Checklist (view only) */}
+        {!isEdit && trip.checklistItems.length > 0 && (
           <div className="card">
             <h4 style={{ marginBottom: 'var(--space-3)' }}>Checklist</h4>
             {trip.checklistItems.map((c) => (
@@ -160,8 +166,8 @@ export function SharedPlanPage() {
           </div>
         )}
 
-        {/* Notes */}
-        {trip.generalNotes && (
+        {/* Notes (view only) */}
+        {!isEdit && trip.generalNotes && (
           <div className="card">
             <h4 style={{ marginBottom: 'var(--space-3)' }}>Notes</h4>
             <p>{trip.generalNotes}</p>

@@ -5,7 +5,7 @@ namespace Common.Interfaces
 {
     public interface IDocumentService : IService
     {
-        Task<byte[]> GeneratePdfReportAsync(TripDetailDto tripDetail);
+        Task<byte[]> GeneratePdfReportAsync(TripDetailDto tripDetail, string shareUrl);
         Task<string> GenerateQrCodeBase64Async(string content);
     }
 }

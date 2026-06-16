@@ -63,4 +63,9 @@
         public string OwnerName { get; set; } = string.Empty;
         public string OwnerEmail { get; set; } = string.Empty;
     }
+
+    public class UpdateNotesDto
+    {
+        public string? GeneralNotes { get; set; }
+    }
 }

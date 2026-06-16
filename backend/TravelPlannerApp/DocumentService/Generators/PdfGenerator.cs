@@ -8,7 +8,7 @@ namespace DocumentService.Generators
     // [OUT-OF-EXERCISE] PDF generisanje — nije pokriveno na vežbama
     public static class PdfGenerator
     {
-        public static byte[] Generate(TripDetailDto trip)
+        public static byte[] Generate(TripDetailDto trip, string shareUrl)
         {
             // QuestPDF Community licenca — obavezno za besplatnu upotrebu
             QuestPDF.Settings.License = LicenseType.Community;
@@ -22,18 +22,34 @@ namespace DocumentService.Generators
                     page.DefaultTextStyle(x => x.FontSize(11));
 
                     // ====== HEADER ======
-                    page.Header().Column(col =>
+                    page.Header().Row(row =>
                     {
-                        col.Item().Text(trip.Name)
-                            .FontSize(24).Bold().FontColor(Colors.Blue.Darken2);
+                        // Leva strana — naslov, opis, datumi
+                        row.RelativeItem().Column(col =>
+                        {
+                            col.Item().Text(trip.Name)
+                                .FontSize(24).Bold().FontColor(Colors.Blue.Darken2);
 
-                        if (!string.IsNullOrEmpty(trip.Description))
-                            col.Item().Text(trip.Description).FontSize(12).Italic();
+                            if (!string.IsNullOrEmpty(trip.Description))
+                                col.Item().Text(trip.Description).FontSize(12).Italic();
 
-                        col.Item().Text($"{trip.StartDate:MMM dd, yyyy} — {trip.EndDate:MMM dd, yyyy}")
-                            .FontSize(12).FontColor(Colors.Grey.Darken1);
+                            col.Item().Text($"{trip.StartDate:MMM dd, yyyy} — {trip.EndDate:MMM dd, yyyy}")
+                                .FontSize(12).FontColor(Colors.Grey.Darken1);
+                        });
 
-                        col.Item().PaddingVertical(5).LineHorizontal(1).LineColor(Colors.Grey.Lighten2);
+                        // Desna strana — QR kod (View share link), gornji desni ugao
+                        if (!string.IsNullOrEmpty(shareUrl))
+                        {
+                            var qrBase64 = QrCodeGenerator.GenerateBase64(shareUrl);
+                            var qrBytes = Convert.FromBase64String(qrBase64);
+
+                            row.ConstantItem(90).AlignRight().AlignTop().Column(qrCol =>
+                            {
+                                qrCol.Item().Width(80).Height(80).Image(qrBytes);
+                                qrCol.Item().AlignCenter().Text("Scan to view")
+                                    .FontSize(7).FontColor(Colors.Grey.Darken1);
+                            });
+                        }
                     });
 
                     // ====== CONTENT ======

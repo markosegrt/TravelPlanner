@@ -24,9 +24,9 @@ namespace DocumentService
         }
 
         // ====== PDF REPORT ======
-        public Task<byte[]> GeneratePdfReportAsync(TripDetailDto tripDetail)
+        public Task<byte[]> GeneratePdfReportAsync(TripDetailDto tripDetail, string shareUrl)
         {
-            var pdfBytes = PdfGenerator.Generate(tripDetail);
+            var pdfBytes = PdfGenerator.Generate(tripDetail, shareUrl);
             return Task.FromResult(pdfBytes);
         }
 
