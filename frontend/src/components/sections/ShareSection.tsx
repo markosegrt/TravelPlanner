@@ -34,9 +34,16 @@ export function ShareSection({ tripId, tripName }: {
     }
   };
 
+
+  const buildShareLink = (): string => {
+    if (!share) return '';
+    const token = share.token ?? share.shareUrl.split('/').pop();
+    return `${window.location.origin}/shared/${token}`;
+  };
+
   const handleCopy = () => {
     if (!share) return;
-    navigator.clipboard.writeText(share.shareUrl);
+    navigator.clipboard.writeText(buildShareLink());
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -113,7 +120,7 @@ export function ShareSection({ tripId, tripName }: {
               <div style={{ flex: 1, minWidth: 220 }}>
                 <label className="form-label">Share link</label>
                 <div className="flex gap-2 mt-4" style={{ marginTop: 'var(--space-2)' }}>
-                  <input className="form-input" value={share.shareUrl} readOnly style={{ flex: 1, fontSize: 'var(--font-size-sm)' }} />
+                  <input className="form-input" value={buildShareLink()} readOnly style={{ flex: 1, fontSize: 'var(--font-size-sm)' }} />
                   <button className="btn btn-outline btn-sm" onClick={handleCopy}>
                     {copied ? '✓ Copied' : 'Copy'}
                   </button>
